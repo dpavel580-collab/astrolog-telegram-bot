@@ -13,6 +13,9 @@ from telegram.ext import (
 )
 
 from .config import BOT_TOKEN, MONO_PAYMENT_URL, OWNER_CHAT_ID
+from .users import register_user
+from .users import get_users_count
+from .users import get_all_user_ids
 from .keyboards import services_menu_kb, CB_SERVICE
 from .services import get_service
 from .forms import (
@@ -30,6 +33,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+BROADCAST_MODE = {}
+BOT_PAUSED = False
+
 
 def service_card_kb(service_id: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
@@ -44,7 +50,7 @@ def payment_kb(service_id: str) -> InlineKeyboardMarkup:
     if MONO_PAYMENT_URL:
         rows.append([InlineKeyboardButton("💳 Перейти до реквізитів", url=MONO_PAYMENT_URL)])
 
-    rows.append([InlineKeyboardButton("✅ Я заповнив(ла)", callback_data=f"paid:{service_id}")])
+    rows.append([InlineKeyboardButton("✅ Я заповнила(в)", callback_data=f"paid:{service_id}")])
     rows.append([InlineKeyboardButton("🏠 Назад в головне меню", callback_data="back:services")])
 
     return InlineKeyboardMarkup(rows)
@@ -79,7 +85,14 @@ async def safe_edit_message(
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     context.user_data.pop("form", None)
+    register_user(update.effective_user)
     inc_stat("start")
+
+    if BOT_PAUSED:
+        await update.message.reply_text(
+            "⏸ Запис тимчасово закрито.\n\nСпробуйте завтра."
+        )
+        return
 
     try:
         with open("assets/start.mp4", "rb") as animation:
@@ -100,11 +113,197 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = str(update.effective_user.id)
 
+<<<<<<< HEAD
     if not OWNER_CHAT_ID or user_id != str(OWNER_CHAT_ID):
         await update.message.reply_text("УПС))) у вас немає доступу до цієї команди.")
+=======
+    if str(user_id) != str(OWNER_CHAT_ID):
+>>>>>>> 7bab5c3 (update bot: admin panel, broadcast image, fixes)
         return
 
     await update.message.reply_text(format_stats())
+
+
+async def users_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+
+    if str(user_id) != str(OWNER_CHAT_ID):
+        return
+
+    count = get_users_count()
+
+    await update.message.reply_text(
+        f"👥 Користувачів бота: {count}"
+    )
+
+
+async def pause_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global BOT_PAUSED
+
+    user_id = str(update.effective_user.id)
+
+    if str(user_id) != str(OWNER_CHAT_ID):
+        return
+
+    BOT_PAUSED = True
+
+    await update.message.reply_text(
+        "⏸ Бот поставлено на паузу.\n\nКористувачі тимчасово не можуть користуватися ботом."
+    )
+
+
+async def resume_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global BOT_PAUSED
+
+    user_id = str(update.effective_user.id)
+
+    if str(user_id) != str(OWNER_CHAT_ID):
+        return
+
+    BOT_PAUSED = False
+
+    await update.message.reply_text(
+        "▶️ Бот знову активний."
+    )
+
+
+async def admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+
+    if str(user_id) != str(OWNER_CHAT_ID):
+        return
+
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("📊 Статистика", callback_data="admin:stats")],
+        [InlineKeyboardButton("👥 Користувачі", callback_data="admin:users")],
+        [InlineKeyboardButton("📨 Розсилка", callback_data="admin:broadcast")],
+        [InlineKeyboardButton("⏸ Пауза", callback_data="admin:pause")],
+        [InlineKeyboardButton("▶️ Запуск", callback_data="admin:resume")],
+    ])
+
+    await update.message.reply_text(
+        "🔐 Адмін-панель",
+        reply_markup=kb,
+    )
+
+
+async def admin_panel_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global BOT_PAUSED
+
+    query = update.callback_query
+    await query.answer()
+
+    user_id = str(query.from_user.id)
+
+    if str(user_id) != str(OWNER_CHAT_ID):
+        return
+
+    action = query.data
+
+    if action == "admin:stats":
+        await query.edit_message_text(format_stats())
+        return
+
+    if action == "admin:users":
+        count = get_users_count()
+        await query.edit_message_text(f"👥 Користувачів бота: {count}")
+        return
+
+    if action == "admin:broadcast":
+        BROADCAST_MODE[user_id] = True
+        await query.edit_message_text(
+            "📨 Напишіть текст (повідомлення) розсилки.\n\n"
+            "Він буде відправлений всім користувачам бота."
+        )
+        return
+
+    if action == "admin:pause":
+        BOT_PAUSED = True
+        await query.edit_message_text("⏸ Бот поставлено на паузу.")
+        return
+
+    if action == "admin:resume":
+        BOT_PAUSED = False
+        await query.edit_message_text("▶️ Бот знову активний.")
+        return
+
+
+async def broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+
+    if str(user_id) != str(OWNER_CHAT_ID):
+        return
+
+    BROADCAST_MODE[user_id] = True
+
+    await update.message.reply_text(
+        "📨 Напишіть текст (повідомлення) розсилки.\n\n"
+        "Він буде відправлений всім користувачам бота."
+    )
+
+
+async def handle_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+
+    if user_id not in BROADCAST_MODE:
+        return
+
+    if str(user_id) != str(OWNER_CHAT_ID):
+        BROADCAST_MODE.pop(user_id, None)
+        return
+
+    BROADCAST_MODE.pop(user_id, None)
+
+    text = update.message.text
+    users = get_all_user_ids()
+
+    sent = 0
+
+    for uid in users:
+        try:
+            kb = InlineKeyboardMarkup([
+                [InlineKeyboardButton("✨ Записатися на консультацію", callback_data="back:services")]
+            ])
+
+            try:
+                with open("assets/broadcast.jpg", "rb") as photo:
+                    await context.bot.send_photo(
+                        chat_id=uid,
+                        photo=photo,
+                        caption=text,
+                        reply_markup=kb,
+                        protect_content=True,
+                    )
+            except Exception:
+                await context.bot.send_message(
+                    chat_id=uid,
+                    text=text,
+                    reply_markup=kb,
+                    protect_content=True,
+                )
+
+            sent += 1
+            await asyncio.sleep(0.05)
+        except Exception:
+            pass
+
+    await update.message.reply_text(
+        f"✅ Розсилку завершено.\n\nОтримали: {sent} користувачів."
+    )
+
+
+async def handle_text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+
+    if user_id in BROADCAST_MODE:
+        await handle_broadcast(update, context)
+        return
+
+    if context.user_data.get("form"):
+        await handle_form_text(update, context)
+        return
+
+    await update.effective_message.reply_text("На даному етапі введення тексту недоступне.")
 
 
 async def on_service_click(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -144,24 +343,24 @@ async def on_service_click(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         try:
             with open(image, "rb") as photo:
                 await context.bot.send_photo(
-    chat_id=query.message.chat_id,
-    photo=photo,
-    caption=caption,
-    reply_markup=service_card_kb(service_id),
-    parse_mode="HTML",
-    protect_content=True,
-)
+                    chat_id=query.message.chat_id,
+                    photo=photo,
+                    caption=caption,
+                    reply_markup=service_card_kb(service_id),
+                    parse_mode="HTML",
+                    protect_content=True,
+                )
             return
         except FileNotFoundError:
             pass
 
     await context.bot.send_message(
-    chat_id=query.message.chat_id,
-    text=caption,
-    reply_markup=service_card_kb(service_id),
-    parse_mode="HTML",
-    protect_content=True,
-)
+        chat_id=query.message.chat_id,
+        text=caption,
+        reply_markup=service_card_kb(service_id),
+        parse_mode="HTML",
+        protect_content=True,
+    )
 
 
 async def on_back_to_services(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -196,7 +395,7 @@ async def on_pay(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not service:
         await safe_edit_message(query, "Елемент не знайдено.")
         return
-    
+
     inc_stat("requisites_open")
 
     title = service["title"]
@@ -205,8 +404,8 @@ async def on_pay(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     text = (
         f"✨ <b>{title}</b>\n"
         f"💳 💴 <b>{price} грн</b>\n\n"
-        "Для отримання інформації перейдіть за кнопкою нижче.\n"
-        "Після заповнення натисніть кнопку <b>\"Я заповнив(ла)\"</b>."
+        "Для отримання інформації перейдіть далі.\n"
+        "Після заповнення натисніть кнопку <b>\"Я заповнила(в)\"</b>."
     )
 
     await safe_edit_message(query, text, payment_kb(service_id))
@@ -252,14 +451,21 @@ def main() -> None:
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("stats", stats_command))
+    app.add_handler(CommandHandler("users", users_command))
+    app.add_handler(CommandHandler("broadcast", broadcast_command))
+    app.add_handler(CommandHandler("pause", pause_command))
+    app.add_handler(CommandHandler("resume", resume_command))
+    app.add_handler(CommandHandler("admin", admin_command))
+
     app.add_handler(CallbackQueryHandler(on_service_click, pattern=f"^{CB_SERVICE}:"))
     app.add_handler(CallbackQueryHandler(on_back_to_services, pattern=r"^back:services$"))
     app.add_handler(CallbackQueryHandler(on_pay, pattern=r"^pay:"))
     app.add_handler(CallbackQueryHandler(on_paid_start_form, pattern=r"^paid:"))
     app.add_handler(CallbackQueryHandler(on_form_cancel, pattern=r"^form:cancel$"))
+    app.add_handler(CallbackQueryHandler(admin_panel_click, pattern=r"^admin:"))
 
     # текст під час активної форми
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_form_text))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_router))
 
     # будь-які не-текстові повідомлення
     app.add_handler(MessageHandler(~filters.TEXT & ~filters.COMMAND, handle_non_text_during_form))
