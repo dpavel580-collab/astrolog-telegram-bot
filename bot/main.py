@@ -398,7 +398,7 @@ async def on_pay(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     title = service["title"]
     price = service["price_uah"]
 
-text = (
+    text = (
     f"✨ <b>{title}</b>\n"
     f"💳 💴 <b>{price} грн</b>\n\n"
     "Для отримання інформації перейдіть до реквізитів.\n"
@@ -477,5 +477,6 @@ def main() -> None:
 if __name__ == "__main__":
 
     main()
+
 
 
