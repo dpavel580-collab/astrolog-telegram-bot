@@ -113,12 +113,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = str(update.effective_user.id)
 
-<<<<<<< HEAD
     if not OWNER_CHAT_ID or user_id != str(OWNER_CHAT_ID):
         await update.message.reply_text("УПС))) у вас немає доступу до цієї команди.")
-=======
     if str(user_id) != str(OWNER_CHAT_ID):
->>>>>>> 7bab5c3 (update bot: admin panel, broadcast image, fixes)
         return
 
     await update.message.reply_text(format_stats())
@@ -479,3 +476,4 @@ def main() -> None:
 if __name__ == "__main__":
 
     main()
+
