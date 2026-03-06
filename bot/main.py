@@ -378,7 +378,7 @@ async def on_back_to_services(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     await context.bot.send_message(
     chat_id=query.message.chat_id,
-    text="👆 Натисни на зірку",
+    text="Доторкнися до зірок👆",
     reply_markup=services_menu_kb(),
     )
 
@@ -493,6 +493,7 @@ def main() -> None:
 if __name__ == "__main__":
 
     main()
+
 
 
 
