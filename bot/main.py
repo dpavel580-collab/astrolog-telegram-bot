@@ -373,9 +373,14 @@ async def on_back_to_services(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     await context.bot.send_message(
     chat_id=query.message.chat_id,
-    text="✨\n\n Доторкнися до зірок👆",
+    text="💫"
+    )
+
+    await context.bot.send_message(
+    chat_id=query.message.chat_id,
+    text="👆 Натисни на зірку",
     reply_markup=services_menu_kb(),
-)
+    )
 
 
 async def on_pay(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -488,6 +493,7 @@ def main() -> None:
 if __name__ == "__main__":
 
     main()
+
 
 
 
