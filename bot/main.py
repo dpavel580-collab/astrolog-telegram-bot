@@ -12,7 +12,7 @@ from telegram.ext import (
     filters,
 )
 
-from .config import BOT_TOKEN, MONO_PAYMENT_URL
+from .config import BOT_TOKEN, MONO_PAYMENT_URL, OWNER_CHAT_ID
 from .keyboards import services_menu_kb, CB_SERVICE
 from .services import get_service
 from .forms import (
@@ -98,6 +98,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = str(update.effective_user.id)
+
+    if not OWNER_CHAT_ID or user_id != str(OWNER_CHAT_ID):
+        await update.message.reply_text("УПС))) у вас немає доступу до цієї команди.")
+        return
+
     await update.message.reply_text(format_stats())
 
 
@@ -265,4 +271,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+
     main()
