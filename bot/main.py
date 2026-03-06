@@ -39,7 +39,7 @@ BOT_PAUSED = False
 
 def service_card_kb(service_id: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("💳 Реквізити", callback_data=f"pay:{service_id}")],
+        InlineKeyboardButton("➡️ Перейти далі", callback_data=f"pay:{service_id}")
         [InlineKeyboardButton("🏠 Назад в головне меню", callback_data="back:services")],
     ])
 
@@ -398,12 +398,13 @@ async def on_pay(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     title = service["title"]
     price = service["price_uah"]
 
-    text = (
-        f"✨ <b>{title}</b>\n"
-        f"💳 💴 <b>{price} грн</b>\n\n"
-        "Для отримання інформації перейдіть далі.\n"
-        "Після заповнення натисніть кнопку <b>\"Я заповнила(в)\"</b>."
-    )
+text = (
+    f"✨ <b>{title}</b>\n"
+    f"💳 💴 <b>{price} грн</b>\n\n"
+    "Для отримання інформації перейдіть до реквізитів.\n"
+    "Під час заповнення обов'язково вкажіть Ім'я та Прізвище.\n"
+    "Після заповнення натисніть кнопку ➡️ <b>Я заповнила(в)</b>."
+)
 
     await safe_edit_message(query, text, payment_kb(service_id))
 
@@ -476,4 +477,5 @@ def main() -> None:
 if __name__ == "__main__":
 
     main()
+
 
