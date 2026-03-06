@@ -39,7 +39,7 @@ BOT_PAUSED = False
 
 def service_card_kb(service_id: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
-        InlineKeyboardButton("➡️ Перейти далі", callback_data=f"pay:{service_id}")
+        [InlineKeyboardButton("➡️ Перейти далі", callback_data=f"pay:{service_id}")],
         [InlineKeyboardButton("🏠 Назад в головне меню", callback_data="back:services")],
     ])
 
@@ -477,6 +477,7 @@ def main() -> None:
 if __name__ == "__main__":
 
     main()
+
 
 
 
