@@ -366,13 +366,10 @@ async def on_back_to_services(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     context.user_data.pop("form", None)
 
-    ok = await safe_edit_message(
-        query,
-        "✨",
-        services_menu_kb(),
-    )
-    if ok:
-        return
+    try:
+        await query.message.delete()
+    except Exception:
+        pass
 
     await context.bot.send_message(
         chat_id=query.message.chat_id,
@@ -399,14 +396,24 @@ async def on_pay(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     price = service["price_uah"]
 
     text = (
-    f"✨ <b>{title}</b>\n"
-    f"💳 💴 <b>{price} грн</b>\n\n"
-    "Для отримання інформації перейдіть до реквізитів.\n"
-    "Під час заповнення обов'язково вкажіть Ім'я та Прізвище.\n"
-    "Після заповнення натисніть кнопку ➡️ <b>Я заповнила(в)</b>."
-)
+        f"✨ <b>{title}</b>\n"
+        f"💳 💴 <b>{price} грн</b>\n\n"
+        "Для отримання інформації перейдіть до реквізитів.\n"
+        "Під час заповнення обов'язково вкажіть Ім'я та Прізвище.\n"
+        "Після заповнення натисніть кнопку ➡️ <b>Я заповнила(в)</b>."
+    )
 
-    await safe_edit_message(query, text, payment_kb(service_id))
+    try:
+        await query.message.delete()
+    except Exception:
+        pass
+
+    await context.bot.send_message(
+        chat_id=query.message.chat_id,
+        text=text,
+        reply_markup=payment_kb(service_id),
+        parse_mode="HTML",
+    )
 
 
 async def on_paid_start_form(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -416,10 +423,15 @@ async def on_paid_start_form(update: Update, context: ContextTypes.DEFAULT_TYPE)
     _, service_id = query.data.split(":", 1)
     inc_stat("form_started")
 
-    await safe_edit_message(
-        query,
-        "✅ <b>Перехід далі</b>\n\nЗаповніть дані нижче.",
-        InlineKeyboardMarkup([]),
+    try:
+        await query.message.delete()
+    except Exception:
+        pass
+
+    await context.bot.send_message(
+        chat_id=query.message.chat_id,
+        text="✅ <b>Перехід далі</b>\n\nЗаповніть дані нижче.",
+        parse_mode="HTML",
     )
 
     await start_form(update, context, service_id)
@@ -477,6 +489,7 @@ def main() -> None:
 if __name__ == "__main__":
 
     main()
+
 
 
 
