@@ -171,6 +171,9 @@ async def start_form(update: Update, context: ContextTypes.DEFAULT_TYPE, service
         "last_prompt_message_id": None,
     }
 
+        if context.user_data["form"].get("last_prompt_message_id"):
+        return
+
     await send_form_prompt(
         context=context,
         chat_id=update.effective_chat.id,
