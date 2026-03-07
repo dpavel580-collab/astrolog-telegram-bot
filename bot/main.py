@@ -399,6 +399,7 @@ async def on_pay(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     title = service["title"]
     price = service["price_uah"]
+    image = service.get("image")
 
     text = (
         f"✨ <b>{title}</b>\n"
@@ -413,13 +414,28 @@ async def on_pay(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception:
         pass
 
+    if image:
+        try:
+            with open(image, "rb") as photo:
+                await context.bot.send_photo(
+                    chat_id=query.message.chat_id,
+                    photo=photo,
+                    caption=text,
+                    reply_markup=payment_kb(service_id),
+                    parse_mode="HTML",
+                    protect_content=True,
+                )
+                return
+        except FileNotFoundError:
+            pass
+
     await context.bot.send_message(
         chat_id=query.message.chat_id,
         text=text,
         reply_markup=payment_kb(service_id),
         parse_mode="HTML",
+        protect_content=True,
     )
-
 
 async def on_paid_start_form(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -531,6 +547,7 @@ def main() -> None:
 if __name__ == "__main__":
 
     main()
+
 
 
 
