@@ -23,6 +23,7 @@ from .forms import (
     handle_form_text,
     cancel_form,
     handle_non_text_during_form,
+    build_steps,
 )
 
 from .stats import inc_stat, format_stats
@@ -427,16 +428,53 @@ async def on_paid_start_form(update: Update, context: ContextTypes.DEFAULT_TYPE)
     _, service_id = query.data.split(":", 1)
     inc_stat("form_started")
 
+    service = get_service(service_id)
+    image = service.get("image") if service else None
+    steps = build_steps(service_id)
+
+    context.user_data["form"] = {
+        "service_id": service_id,
+        "step_idx": 0,
+        "answers": {},
+        "started_at": __import__("datetime").datetime.utcnow().isoformat(),
+        "last_prompt_message_id": None,
+    }
+
+    first_prompt = steps[0].prompt
+
+    text = (
+        "✅ <b>Перехід далі</b>\n\n"
+        f"{first_prompt}"
+    )
+
     try:
         await query.message.delete()
     except Exception:
         pass
 
-    await context.bot.send_message(
+    if image:
+        try:
+            with open(image, "rb") as photo:
+                msg = await context.bot.send_photo(
+                    chat_id=query.message.chat_id,
+                    photo=photo,
+                    caption=text,
+                    parse_mode="HTML",
+                    protect_content=True,
+                )
+                context.user_data["form"]["last_prompt_message_id"] = msg.message_id
+                return
+        except FileNotFoundError:
+            pass
+
+    msg = await context.bot.send_message(
         chat_id=query.message.chat_id,
-        text="✅ <b>Перехід далі</b>\n\nЗаповніть дані нижче.",
+        text=text,
         parse_mode="HTML",
+        protect_content=True,
     )
+
+    context.user_data["form"]["last_prompt_message_id"] = msg.message_id
 
     await start_form(update, context, service_id)
 
@@ -493,6 +531,7 @@ def main() -> None:
 if __name__ == "__main__":
 
     main()
+
 
 
 
